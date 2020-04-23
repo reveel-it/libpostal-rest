@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -17,6 +18,26 @@ import (
 
 type Request struct {
 	Query string `json:"query"`
+}
+
+// Middleware function, which will be called for each request
+func authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("Authorization")
+
+		tokenBytes := []byte(token[7:])
+		keyBytes := []byte(os.Getenv("API_KEY"))
+
+		keyIsValid := subtle.ConstantTimeCompare(tokenBytes, keyBytes) == 1
+
+		if keyIsValid {
+			// Pass down the request to the next middleware (or final handler)
+			next.ServeHTTP(w, r)
+		} else {
+			// Write an error and stop the handler chain
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		}
+	})
 }
 
 func main() {
@@ -37,6 +58,7 @@ func main() {
 	router.HandleFunc("/health", HealthHandler).Methods("GET")
 	router.HandleFunc("/expand", ExpandHandler).Methods("POST")
 	router.HandleFunc("/parser", ParserHandler).Methods("POST")
+	router.Use(authMiddleware)
 
 	s := &http.Server{Addr: listenSpec, Handler: router}
 	go func() {
