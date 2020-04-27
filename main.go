@@ -27,7 +27,8 @@ func authMiddleware(next http.Handler) http.Handler {
 
 		// "Bearer a", the minimal header value, is 8 characters
 		if len(token) < 8 {
-			return http.Error(w, "Forbidden", http.StatusForbidden)
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
 		}
 
 		tokenBytes := []byte(token[7:])
