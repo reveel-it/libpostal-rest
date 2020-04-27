@@ -25,6 +25,11 @@ func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")
 
+		// "Bearer a", the minimal header value, is 8 characters
+		if len(token) < 8 {
+			return http.Error(w, "Forbidden", http.StatusForbidden)
+		}
+
 		tokenBytes := []byte(token[7:])
 		keyBytes := []byte(os.Getenv("API_KEY"))
 
