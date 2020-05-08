@@ -71,7 +71,7 @@ func main() {
 	go func() {
 		if certFile != "" && keyFile != "" {
 			log.Printf("listening on https://%s\n", listenSpec)
-			log.Fatal(ListenAndServeTLS(certFile, keyFile))
+			log.Fatal(s.ListenAndServeTLS(certFile, keyFile))
 		} else {
 			log.Printf("listening on http://%s\n", listenSpec)
 			log.Fatal(s.ListenAndServe())
