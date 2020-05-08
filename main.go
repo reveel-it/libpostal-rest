@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"log"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -69,11 +70,11 @@ func main() {
 	s := &http.Server{Addr: listenSpec, Handler: router}
 	go func() {
 		if certFile != "" && keyFile != "" {
-			fmt.Printf("listening on https://%s\n", listenSpec)
-			s.ListenAndServeTLS(certFile, keyFile)
+			log.Printf("listening on https://%s\n", listenSpec)
+			log.Fatal(ListenAndServeTLS(certFile, keyFile))
 		} else {
-			fmt.Printf("listening on http://%s\n", listenSpec)
-			s.ListenAndServe()
+			log.Printf("listening on http://%s\n", listenSpec)
+			log.Fatal(s.ListenAndServe())
 		}
 	}()
 
@@ -81,10 +82,10 @@ func main() {
 	signal.Notify(stop, os.Interrupt)
 
 	<-stop
-	fmt.Println("\nShutting down the server...")
+	log.Println("\nShutting down the server...")
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	s.Shutdown(ctx)
-	fmt.Println("Server stopped")
+	log.Println("Server stopped")
 }
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
