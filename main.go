@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -48,9 +49,6 @@ func authMiddleware(next http.Handler) http.Handler {
 
 func main() {
 	host := os.Getenv("LISTEN_HOST")
-	if host == "" {
-		host = "0.0.0.0"
-	}
 	port := os.Getenv("LISTEN_PORT")
 	if port == "" {
 		port = "8080"
@@ -67,13 +65,17 @@ func main() {
 	router.Use(authMiddleware)
 
 	s := &http.Server{Addr: listenSpec, Handler: router}
+	l, err := net.Listen("tcp", listenSpec)
+	if err != nil {
+		log.Fatal(err)
+	}
 	go func() {
 		if certFile != "" && keyFile != "" {
-			fmt.Printf("listening on https://%s\n", listenSpec)
-			s.ListenAndServeTLS(certFile, keyFile)
+			log.Printf("listening on https://%s\n", listenSpec)
+			log.Fatal(s.ServeTLS(l, certFile, keyFile))
 		} else {
-			fmt.Printf("listening on http://%s\n", listenSpec)
-			s.ListenAndServe()
+			log.Printf("listening on http://%s\n", listenSpec)
+			log.Fatal(s.Serve(l))
 		}
 	}()
 
@@ -81,10 +83,11 @@ func main() {
 	signal.Notify(stop, os.Interrupt)
 
 	<-stop
-	fmt.Println("\nShutting down the server...")
+	log.Println("\nShutting down the server...")
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	s.Shutdown(ctx)
-	fmt.Println("Server stopped")
+	l.Close()
+	log.Println("Server stopped")
 }
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
